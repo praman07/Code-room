@@ -260,9 +260,18 @@ const App = () => {
   };
 
   const joinSession = (code, pid, name) => {
-    if (!socket.connected) socket.connect();
-    socket.emit("room:join", { roomCode: code.toUpperCase(), participantId: pid });
-    socket.emit("doc:load", { roomCode: code.toUpperCase() });
+    const emitJoin = () => {
+      socket.emit("room:join", { roomCode: code.toUpperCase(), participantId: pid });
+      socket.emit("doc:load", { roomCode: code.toUpperCase() });
+    };
+
+    if (!socket.connected) {
+      socket.connect();
+      socket.once("connect", emitJoin);
+    } else {
+      emitJoin();
+    }
+
     fetch(`${API}/${code}`, { credentials: "include" }).then(r => r.json()).then(d => {
       if (d.success) {
         setIsLocked(d.data?.isLocked || false);
